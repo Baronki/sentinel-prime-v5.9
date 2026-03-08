@@ -1,0 +1,36 @@
+[Unit]
+Description=Sentinel Prime V5.9 - HexStrike Security Command Center
+After=network.target wsl.service
+Wants=network.target
+
+[Service]
+Type=forking
+User=nglert
+Group=nglert
+WorkingDirectory=/home/nglert
+
+# Environment
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/nglert/.npm-global/bin:/home/linuxbrew/.linuxbrew/bin"
+Environment="NODE_ENV=production"
+
+# Start HexStrike Server
+ExecStartPre=/bin/bash -c '/usr/bin/tmux kill-session -t hexstrike 2>/dev/null || true'
+ExecStartPre=/bin/bash -c 'cd /home/nglert/hexstrike-ai && /usr/bin/tmux new -d -s hexstrike "python3 hexstrike_server.py"'
+
+# Wait for HexStrike to start
+ExecStartPre=/bin/bash -c 'sleep 15'
+
+# Start Sentinel Prime Backend
+ExecStart=/bin/bash -c 'cd /home/nglert && /usr/bin/tmux new -d -s sentinel_v59 "python3 backend-v5.9-hexstrike.py"'
+
+# Restart on failure
+Restart=on-failure
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sentinel-prime
+
+[Install]
+WantedBy=multi-user.target
